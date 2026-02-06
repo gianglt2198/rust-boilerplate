@@ -1,0 +1,63 @@
+api:
+  enabled: true
+
+sources:
+  file_logs:
+    type: file
+    include:
+      - /services/logs/*
+  otel:
+    type: opentelemetry
+    grpc:
+      address: 0.0.0.0:4317
+    http:
+      address: 0.0.0.0:4318
+      headers: []
+      keepalive:
+        max_connection_age_jitter_factor: 0.1
+        max_connection_age_secs: 300
+    use_otlp_decoding: true
+
+transforms:
+  parse_file_logs:
+    type: remap
+    inputs:
+      - file_logs
+    source: |
+      . = parse_json!(string!(.message))
+
+sinks:
+  loki:
+    type: loki
+    inputs: ["parse_file_logs"]
+    endpoint: http://loki:3100
+    encoding:
+      codec: json
+    compression: gzip
+    labels:
+      service: "rust-observability"
+      level: "{{level}}"
+    remove_timestamp: false
+
+  otel_sink_metrics:
+    inputs:
+      - otel.metrics
+    type: opentelemetry
+    protocol:
+      type: http
+      uri: http://prometheus:9090/api/v1/otlp/v1/metrics
+      method: post
+      encoding:
+        codec: otlp
+
+  otel_sink_traces:
+    inputs:
+      - otel.traces
+    type: opentelemetry
+    protocol:
+      type: http
+      uri: http://tempo:4318/v1/traces
+      method: post
+      encoding:
+        codec: otlp
+

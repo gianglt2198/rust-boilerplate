@@ -1,0 +1,8 @@
+[package]
+name = "ro-common"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+nanoid.workspace = true

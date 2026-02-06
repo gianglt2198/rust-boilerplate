@@ -1,0 +1,22 @@
+[package]
+name = "ro-telemetry"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Internal
+ro-config.workspace = true
+
+# External
+tokio.workspace = true
+opentelemetry.workspace = true
+opentelemetry_sdk.workspace = true
+opentelemetry-otlp.workspace = true
+opentelemetry-http.workspace = true
+tracing.workspace = true
+tracing-opentelemetry.workspace = true
+sysinfo.workspace = true
+axum.workspace = true                  # Used for extracting headers
+tower.workspace = true
+once_cell.workspace = true

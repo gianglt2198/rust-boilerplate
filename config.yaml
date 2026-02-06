@@ -1,0 +1,42 @@
+common:
+  name: rust-observability
+  version: 1.0.0
+  environment: development
+  debug: true
+
+server:
+  host: 127.0.0.1
+  port: 3001
+  shutdown_timeout: 30
+  cors: true
+
+database:
+  driver: postgresql
+  host: localhost
+  port: 5431
+  username: username
+  password: password
+  database: postgres
+  pool_size: 10
+  max_idle_connections: 5
+
+otel:
+  enabled: true
+  exporter:
+    protocol: grpc
+    endpoint: http://127.0.0.1:4317
+    timeout: 5
+    batch_size: 512
+
+logging:
+  level: info
+  format: json
+  targets:
+    - target: file
+      path: logs/app.log
+      level: info
+    - target: console
+      level: info
+
+nats:
+  url: nats://localhost:4223
