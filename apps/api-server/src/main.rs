@@ -1,38 +1,41 @@
+mod config;
 mod middlewares;
 mod routes;
 mod states;
 
 use anyhow::Result;
 use opentelemetry::trace::TracerProvider;
-use ro_adapters::{
-    messaging::nats_publisher::NatsPublisher, persistence::postgres::user_repo::PUserRepository,
-};
+use ro_adapters::database::postgres::user_repo::PUserRepository;
 use ro_core::services::user_service::UserService;
-use sea_orm::{ConnectOptions, Database};
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{
     fmt::writer::MakeWriterExt, layer::SubscriberExt, util::SubscriberInitExt,
 };
 
+use crate::config::definition::AppConfig;
 use crate::middlewares::request_id;
 
+use ro_db::orm;
 use ro_telemetry::{
     meter::{self, collect_system_metrics},
     tracer,
 };
 
-use ro_config as config;
-
 #[tokio::main]
 async fn main() -> Result<()> {
-    let cfg: &ro_config::definition::AppConfig = config::definition::AppConfig::get_config();
+    let cfg: &AppConfig = AppConfig::get_config();
 
-    let trace_provider = tracer::init_tracer(cfg.clone());
-    let trace = trace_provider.tracer(cfg.common.name.clone());
-    let tracer_layer = tracing_opentelemetry::layer().with_tracer(trace);
+    let trace_provider = tracer::init_tracer(
+        cfg.shared.common.name.clone(),
+        cfg.shared.otel.exporter.endpoint.clone(),
+    );
+    let trace = trace_provider.tracer(cfg.shared.common.name.clone());
 
-    let _ = meter::init_meter(cfg.clone());
+    let _ = meter::init_meter(
+        cfg.shared.common.name.clone(),
+        cfg.shared.otel.exporter.endpoint.clone(),
+    );
 
     let logfile = tracing_appender::rolling::hourly("./logs", "rolling.log");
     let stdout = std::io::stdout.with_max_level(tracing::Level::INFO);
@@ -47,35 +50,18 @@ async fn main() -> Result<()> {
                 .with_writer(stdout.and(logfile))
                 .json(),
         )
-        .with(tracer_layer)
+        .with(tracing_opentelemetry::layer().with_tracer(trace))
         .init();
 
     tracing::info!("Starting Rust Observability");
     tracing::info!("Configuration: {:?}", cfg);
 
-    let mut opt = ConnectOptions::new(cfg.get_db_addr());
-    opt.max_connections(cfg.database.pool_size)
-        .min_connections(5)
-        .connect_timeout(Duration::from_secs(8))
-        .idle_timeout(Duration::from_secs(8))
-        .sqlx_logging(true); // Auto-logs SQL queries to tracing!
-
-    // 2. Connect
-    let db = Database::connect(opt).await?;
-
+    let db = orm::new_db(cfg.shared.database.clone()).await?;
     // 1. Create Adapter (Repository)
-    let user_repo = PUserRepository::new(db);
-
-    // 2. Connect to NATS
-    // (Assumes you add nats_url to your config, hardcoded for demo)
-    let client = async_nats::ConnectOptions::new()
-        .connect(cfg.nats_addr())
-        .await?;
-
-    let nats_publisher = NatsPublisher::new(client);
+    let user_repo = PUserRepository::new(Arc::clone(&db));
 
     // 2. Create Service (Inject Repository)
-    let user_service = UserService::new(Arc::new(user_repo), Arc::new(nats_publisher));
+    let user_service = UserService::new(Arc::new(user_repo));
 
     // 3. Create State (Inject Service)
     let state = Arc::new(states::AppState::new(user_service));
@@ -127,8 +113,8 @@ async fn shutdown_signal() {
             .await;
     };
 
-    // #[cfg(not(unix))]
-    // let terminate = std::future::pending::<()>();
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
 
     tokio::select! {
         _ = ctrl_c => {

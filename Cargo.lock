@@ -61,6 +61,7 @@ dependencies = [
  "ro-common",
  "ro-config",
  "ro-core",
+ "ro-db",
  "ro-telemetry",
  "sea-orm",
  "serde",
@@ -71,6 +72,7 @@ dependencies = [
  "tracing-appender",
  "tracing-opentelemetry",
  "tracing-subscriber",
+ "validator",
 ]
 
 [[package]]
@@ -2173,6 +2175,7 @@ dependencies = [
  "chrono",
  "ro-config",
  "ro-core",
+ "ro-db",
  "sea-orm",
  "serde",
  "serde_json",
@@ -2208,9 +2211,20 @@ dependencies = [
  "async-nats",
  "async-trait",
  "ro-common",
- "sea-orm",
  "serde",
  "thiserror 1.0.69",
+ "tracing",
+]
+
+[[package]]
+name = "ro-db"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "ro-config",
+ "sea-orm",
+ "serde",
+ "validator",
 ]
 
 [[package]]
@@ -4194,6 +4208,7 @@ dependencies = [
  "futures-util",
  "ro-config",
  "ro-core",
+ "serde",
  "serde_json",
  "tokio",
  "tracing",

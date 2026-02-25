@@ -13,6 +13,7 @@ authors = ["Giang Le <giangle2198@gmail.com>"]
 ro-common = { path = "./libs/common" }
 ro-config = { path = "./libs/configuration" }
 ro-telemetry = { path = "./libs/telemetry" }
+ro-db = { path = "./libs/db" }
 ro-core = { path = "./crates/core" }
 ro-adapters = { path = "./crates/adapters" }
 

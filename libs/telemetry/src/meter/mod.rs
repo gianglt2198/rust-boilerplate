@@ -10,24 +10,25 @@ use tokio::time::interval;
 // use opentelemetry_stdout::MetricExporter;
 
 use crate::meter::system::SystemMetrics;
-use ro_config::definition::AppConfig;
 
-pub fn init_meter(cfg: AppConfig) -> SdkMeterProvider {
+static METER: OnceLock<Meter> = OnceLock::new();
+
+pub fn init_meter(name: String, endpoint: String) -> SdkMeterProvider {
     let exporter = MetricExporter::builder()
         .with_tonic()
-        .with_endpoint(cfg.otel.exporter.endpoint)
+        .with_endpoint(endpoint)
         .build()
         .expect("Failed to create meter exporter");
 
-    let resource = Resource::builder()
-        .with_service_name(cfg.common.name.clone())
-        .build();
+    let resource = Resource::builder().with_service_name(name.clone()).build();
 
     let provider = SdkMeterProvider::builder()
         .with_periodic_exporter(exporter)
         .with_resource(resource)
         .build();
     global::set_meter_provider(provider.clone());
+
+    METER.get_or_init(|| global::meter(Box::leak(Box::new(name.clone()))));
 
     provider
 }
@@ -45,7 +46,5 @@ pub async fn collect_system_metrics(interval_secs: u64) {
 }
 
 pub fn get_meter() -> &'static Meter {
-    static METER: OnceLock<Meter> = OnceLock::new();
-    let cfg = AppConfig::get_config();
-    METER.get_or_init(|| global::meter(cfg.common.name.clone().leak()))
+    METER.get_or_init(|| global::meter("meter".to_string().clone().leak()))
 }

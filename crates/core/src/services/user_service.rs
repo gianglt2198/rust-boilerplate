@@ -1,9 +1,6 @@
 use crate::domain::{
     entities::user::User,
-    ports::{
-        messaging::EventPublisher,
-        user_repo::{UserError, UserRepository},
-    },
+    ports::user_repo::{UserError, UserRepository},
 };
 use ro_common::id::generate_nanoid;
 use std::sync::Arc; // Reusing your shared lib
@@ -12,12 +9,11 @@ use std::sync::Arc; // Reusing your shared lib
 pub struct UserService {
     // The service owns the Abstract Repository (Port), not the Concrete Adapter.
     repo: Arc<dyn UserRepository>,
-    publisher: Arc<dyn EventPublisher>,
 }
 
 impl UserService {
-    pub fn new(repo: Arc<dyn UserRepository>, publisher: Arc<dyn EventPublisher>) -> Self {
-        Self { repo, publisher }
+    pub fn new(repo: Arc<dyn UserRepository>) -> Self {
+        Self { repo }
     }
 
     pub async fn register_user(&self, username: String, email: String) -> Result<User, UserError> {
@@ -30,12 +26,6 @@ impl UserService {
 
         // 3. Persistence: Call the Port
         self.repo.save(&new_user).await?;
-
-        // 2. Publish Event (Fire & Forget or Await)
-        if let Err(e) = self.publisher.publish_user_created(&new_user).await {
-            // In production, you might log this error but not fail the request
-            eprintln!("Failed to publish event: {:?}", e);
-        }
 
         Ok(new_user)
     }

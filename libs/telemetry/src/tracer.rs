@@ -1,9 +1,9 @@
-use std::time::Duration;
+use std::{sync::OnceLock, time::Duration};
 
 use opentelemetry::{
     Context, KeyValue,
     baggage::BaggageExt,
-    global::{self},
+    global::{self, BoxedTracer},
     propagation::TextMapCompositePropagator,
     trace::Span,
 };
@@ -16,9 +16,9 @@ use opentelemetry_sdk::{
 };
 // use opentelemetry_stdout::SpanExporter;
 
-use ro_config::definition::AppConfig;
+static TRACER: OnceLock<BoxedTracer> = OnceLock::new();
 
-pub fn init_tracer(cfg: AppConfig) -> SdkTracerProvider {
+pub fn init_tracer(name: String, endpoint: String) -> SdkTracerProvider {
     let baggage_propagator = BaggagePropagator::new();
     let trace_context_propagator = TraceContextPropagator::new();
     let composite_propagator = TextMapCompositePropagator::new(vec![
@@ -28,9 +28,7 @@ pub fn init_tracer(cfg: AppConfig) -> SdkTracerProvider {
 
     global::set_text_map_propagator(composite_propagator);
 
-    let resource = Resource::builder()
-        .with_service_name(cfg.common.name.clone())
-        .build();
+    let resource = Resource::builder().with_service_name(name.clone()).build();
 
     // Setup tracerprovider with stdout exporter
     // that prints the spans to stdout.
@@ -40,14 +38,20 @@ pub fn init_tracer(cfg: AppConfig) -> SdkTracerProvider {
         .with_batch_exporter(
             SpanExporter::builder()
                 .with_tonic()
-                .with_endpoint(cfg.otel.exporter.endpoint)
+                .with_endpoint(endpoint)
                 .build()
-                .expect("Failed to create span exporter"),
+                .expect("Faid to create span exporter"),
         )
         .build();
 
     global::set_tracer_provider(provider.clone());
+
+    TRACER.get_or_init(|| global::tracer(name.clone()));
     provider
+}
+
+pub fn get_tracer() -> &'static BoxedTracer {
+    TRACER.get_or_init(|| global::tracer("tracer".to_string()))
 }
 
 /// A custom span processor that enriches spans with baggage attributes. Baggage

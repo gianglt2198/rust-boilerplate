@@ -1,4 +1,9 @@
-use axum::{body::HttpBody, extract::Request, middleware::Next, response::Response};
+use axum::{
+    body::HttpBody,
+    extract::{MatchedPath, Request},
+    middleware::Next,
+    response::Response,
+};
 use opentelemetry::KeyValue;
 
 use ro_telemetry::meter::http::{
@@ -9,10 +14,15 @@ use ro_telemetry::meter::http::{
 /// Middleware to add metric to all requests
 pub async fn metric_middleware(req: Request, next: Next) -> Response {
     let start_time = std::time::Instant::now();
+    let route = req
+        .extensions()
+        .get::<MatchedPath>()
+        .map(|m| m.as_str().to_owned())
+        .unwrap_or_else(|| req.uri().path().to_owned());
 
     let attributes = vec![
         KeyValue::new("method", req.method().to_string()),
-        KeyValue::new("uri", req.uri().to_string()),
+        KeyValue::new("route", route),
     ];
 
     // Increment active requests

@@ -63,25 +63,14 @@ impl SystemMetrics {
     }
 
     pub async fn update_stats(&self) {
+        let (cpu, mem) = {
+            let mut sys = self.sys.lock().unwrap();
+            sys.refresh_all();
+            (sys.global_cpu_usage() as f64, sys.used_memory())
+        };
         let mut stats = self.system_stats.lock().unwrap();
-        self.refresh();
-        stats.cpu_usage = self.cpu_usage();
-        stats.memory_usage_mb = self.memory_usage() as f64;
-    }
-
-    fn refresh(&self) {
-        let mut sys = self.sys.lock().unwrap();
-        sys.refresh_all();
-    }
-
-    fn cpu_usage(&self) -> f64 {
-        let sys = self.sys.lock().unwrap();
-        sys.global_cpu_usage() as f64
-    }
-
-    fn memory_usage(&self) -> u64 {
-        let sys = self.sys.lock().unwrap();
-        sys.used_memory()
+        stats.cpu_usage = cpu;
+        stats.memory_usage_mb = mem as f64;
     }
 }
 

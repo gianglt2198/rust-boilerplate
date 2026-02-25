@@ -39,4 +39,5 @@ logging:
       level: info
 
 nats:
+  enabled: false
   url: nats://localhost:4223

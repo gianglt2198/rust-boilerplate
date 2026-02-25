@@ -10,6 +10,7 @@ ro-config.workspace = true
 ro-telemetry.workspace = true
 ro-core.workspace = true
 ro-adapters.workspace = true
+ro-db.workspace = true
 
 # External
 axum.workspace = true
@@ -32,3 +33,4 @@ sea-orm = { workspace = true, features = [
     "mock",
 ] }
 async-nats.workspace = true
+validator.workspace = true

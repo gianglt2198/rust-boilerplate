@@ -7,7 +7,7 @@ use opentelemetry::{
 use crate::middlewares::RequestId;
 
 use ro_common::id::generate_nanoid;
-use ro_telemetry::{extract_context_from_request, get_tracer};
+use ro_telemetry::{extract_context_from_request, tracer::get_tracer};
 
 /// Middleware to add tracing to all requests
 pub async fn tracing_middleware(request: Request, next: Next) -> Response {

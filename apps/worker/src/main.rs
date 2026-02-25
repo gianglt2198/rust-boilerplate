@@ -1,13 +1,16 @@
+mod config;
+
 use async_nats::ConnectOptions;
 use futures_util::StreamExt;
-use ro_config::definition::AppConfig;
 use ro_core::domain::entities::user::User;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+use crate::config::definition::WorkerConfig;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. Load Config & Telemetry
-    let cfg = AppConfig::get_config();
+    let cfg = WorkerConfig::get_config();
     // ro_telemetry::init_subscriber(...) // Initialize logging
 
     tracing_subscriber::registry()

@@ -6,11 +6,14 @@ use axum::{
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
+use validator::Validate;
 
 // DTO: Request Body
-#[derive(Deserialize)]
+#[derive(Deserialize, Validate)]
 pub struct CreateUserRequest {
+    #[validate(length(min = 1, max = 100))]
     pub username: String,
+    #[validate(email)]
     pub email: String,
 }
 
