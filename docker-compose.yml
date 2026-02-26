@@ -20,17 +20,17 @@ services:
       retries: 5
 
   # NATS Messaging Server
-  # nats:
-  #   image: nats:latest
-  #   ports:
-  #     - "4223:4222" # Client connections
-  #     - "8223:8222" # HTTP monitoring
-  #     - "6223:6222" # Routing port for clustering
-  #   command: ["--store_dir=/data"]
-  #   volumes:
-  #     - nats_data:/data
-  #   networks:
-  #     - rust-boilerplate-network
+  nats:
+    image: nats:latest
+    ports:
+      - "4223:4222" # Client connections
+      - "8223:8222" # HTTP monitoring
+      - "6223:6222" # Routing port for clustering
+    command: ["--store_dir=/data"]
+    volumes:
+      - nats_data:/data
+    networks:
+      - rust-boilerplate-network
 
   # memcached:
   #   image: memcached:latest

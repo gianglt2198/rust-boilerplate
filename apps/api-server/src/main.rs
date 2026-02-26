@@ -6,7 +6,11 @@ mod states;
 use anyhow::Result;
 use opentelemetry::trace::TracerProvider;
 use ro_adapters::database::postgres::user_repo::PUserRepository;
-use ro_core::services::user_service::UserService;
+use ro_core::{domain::entities::user::User, services::user_service::UserService};
+use ro_messaging::{
+    Publisher,
+    nats::{NatsClient, middleware::tracing_middleware as nats_tracing_mw},
+};
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{
@@ -87,6 +91,24 @@ async fn main() -> Result<()> {
     tokio::spawn(async move {
         collect_system_metrics(5).await;
     });
+
+    let nats = NatsClient::connect(
+        cfg.shared.common.name.clone(),
+        cfg.shared.nats.clone(),
+        vec![nats_tracing_mw()],
+    )
+    .await?;
+
+    nats.publish_json(
+        "user.created",
+        &User {
+            id: "1".to_string(),
+            active: true,
+            email: "test@ad.cm".to_string(),
+            username: "username".to_string(),
+        },
+    )
+    .await?;
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())

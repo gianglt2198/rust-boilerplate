@@ -11,6 +11,7 @@ ro-telemetry.workspace = true
 ro-core.workspace = true
 ro-adapters.workspace = true
 ro-db.workspace = true
+ro-messaging.workspace = true
 
 # External
 axum.workspace = true

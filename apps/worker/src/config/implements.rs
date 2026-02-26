@@ -5,14 +5,6 @@ use crate::config::definition::WorkerConfig;
 use ro_config as config;
 
 impl WorkerConfig {
-    pub fn nats_addr(&self) -> String {
-        self.shared
-            .nats
-            .url
-            .clone()
-            .unwrap_or("nats://localhost:4222".to_string())
-    }
-
     pub fn get_config() -> &'static WorkerConfig {
         static CONFIG: OnceLock<WorkerConfig> = OnceLock::new();
         CONFIG.get_or_init(|| {

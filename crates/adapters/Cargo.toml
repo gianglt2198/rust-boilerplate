@@ -9,6 +9,7 @@ authors.workspace = true
 ro-core.workspace = true
 ro-config.workspace = true
 ro-db.workspace = true
+ro-messaging.workspace = true
 
 # External
 tokio = { workspace = true, features = ["full"] }

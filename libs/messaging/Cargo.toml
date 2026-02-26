@@ -1,0 +1,23 @@
+[package]
+name = "ro-messaging"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Internal 
+ro-config.workspace = true
+
+# External
+async-nats.workspace = true
+async-trait.workspace = true
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+futures-util.workspace = true
+bytes.workspace = true
+opentelemetry.workspace = true
+tracing.workspace = true
+tracing-opentelemetry.workspace = true
+tokio.workspace = true
