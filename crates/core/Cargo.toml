@@ -8,6 +8,7 @@ authors.workspace = true
 # Core should depend on as little as possible. 
 # "ro-common" is allowed for generic utilities like IDs.
 ro-common.workspace = true
+ro-messaging.workspace = true
 
 # Serde is usually needed for entities, but strictly speaking, 
 # pure domain objects sometimes avoid even this. 

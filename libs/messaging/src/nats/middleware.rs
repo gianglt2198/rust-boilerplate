@@ -11,16 +11,47 @@ pub type NatsHandlerFn = Arc<
         + Sync,
 >;
 
+/// The inner function type for a middleware.
+/// Takes (operation, inner_handler) → new_handler.
+type MiddlewareInner = Arc<dyn Fn(Arc<str>, NatsHandlerFn) -> NatsHandlerFn + Send + Sync>;
+
 /// A middleware wraps a `NatsHandlerFn` → `NatsHandlerFn`.
 /// The `operation` label is one of: `"publish"`, `"subscribe"`, `"queue_subscribe"`, `"request"`.
-pub type MiddlewareFn = Arc<
-    dyn Fn(
-            Arc<str>, // operation
-            NatsHandlerFn,
-        ) -> NatsHandlerFn
-        + Send
-        + Sync,
->;
+#[derive(Clone)]
+pub struct MiddlewareFn {
+    /// Human-readable label shown in `{:?}` output — set at construction time.
+    name: &'static str,
+    inner: MiddlewareInner,
+}
+
+impl MiddlewareFn {
+    /// Create a named middleware.
+    ///
+    /// ```rust  
+    /// let mw = MiddlewareFn::new("tracing", |op, next| { ... });  
+    /// ```
+    pub fn new<F>(name: &'static str, f: F) -> Self
+    where
+        F: Fn(Arc<str>, NatsHandlerFn) -> NatsHandlerFn + Send + Sync + 'static,
+    {
+        Self {
+            name,
+            inner: Arc::new(f),
+        }
+    }
+
+    /// Call the middleware, wrapping `handler` for `operation`.
+    pub fn apply(&self, operation: Arc<str>, handler: NatsHandlerFn) -> NatsHandlerFn {
+        (self.inner)(operation, handler)
+    }
+}
+
+/// Debug shows the middleware name — not the opaque function pointer.
+impl std::fmt::Debug for MiddlewareFn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Middleware").field(&self.name).finish()
+    }
+}
 
 /// Apply a slice of middlewares to a handler.
 ///
@@ -35,7 +66,7 @@ pub fn apply_middleware(
     middlewares
         .iter()
         .rev()
-        .fold(handler, |inner, mw| mw(Arc::clone(&op), inner))
+        .fold(handler, |inner, mw| mw.apply(Arc::clone(&op), inner))
 }
 
 /// Built-in: tracing middleware.
@@ -45,8 +76,7 @@ pub fn apply_middleware(
 ///
 /// Usage: include in the middleware list passed to `NatsClient::new`.
 pub fn tracing_middleware() -> MiddlewareFn {
-    Arc::new(|operation: Arc<str>, inner: NatsHandlerFn| {
-        let op = Arc::clone(&operation);
+    MiddlewareFn::new("tracing", |op, inner| {
         Arc::new(move |msg: async_nats::Message| {
             let inner = Arc::clone(&inner);
             let op = Arc::clone(&op);

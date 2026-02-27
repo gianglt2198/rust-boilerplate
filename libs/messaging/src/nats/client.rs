@@ -16,7 +16,7 @@ use crate::{
     },
 };
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct NatsClient {
     inner: async_nats::Client,
     factory: Arc<MessageFactory>,

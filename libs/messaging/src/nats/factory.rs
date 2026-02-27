@@ -17,6 +17,7 @@ pub const HEADER_USER_ID: &str = "user_id";
 pub const HEADER_FROM: &str = "from";
 pub const HEADER_START_TIME: &str = "start_time";
 
+#[derive(Debug)]
 pub struct MessageFactory {
     name: String,
     cfg: Arc<NatsConfig>,

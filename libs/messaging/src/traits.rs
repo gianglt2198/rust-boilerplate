@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::{collections::HashMap, pin::Pin, sync::Arc};
 
 use async_trait::async_trait;
@@ -32,7 +33,7 @@ where
 
 /// Publish raw or structured messages to a topic.
 #[async_trait]
-pub trait Publisher: Send + Sync {
+pub trait Publisher: Send + Sync + Debug {
     async fn publish(
         &self,
         topic: &str,
@@ -40,6 +41,11 @@ pub trait Publisher: Send + Sync {
         attrs: HashMap<String, String>,
     ) -> Result<(), MessagingError>;
 
+    async fn close(&self) -> Result<(), MessagingError>;
+}
+
+#[async_trait]
+pub trait PublisherExt: Publisher {
     async fn publish_json<T: serde::Serialize + Send + Sync>(
         &self,
         topic: &str,
@@ -49,8 +55,6 @@ pub trait Publisher: Send + Sync {
             .map_err(|e| MessagingError::Serialization(e.to_string()))?;
         self.publish(topic, Bytes::from(data), HashMap::new()).await
     }
-
-    async fn close(&self) -> Result<(), MessagingError>;
 }
 
 /// Fan-out pub/sub subscriber.
@@ -104,3 +108,5 @@ impl<T: Publisher + Subscriber> Client for T {}
 /// `Publisher + QueueSubscriber` — the work-queue client.
 pub trait QueueClient: Publisher + QueueSubscriber {}
 impl<T: Publisher + QueueSubscriber> QueueClient for T {}
+
+impl<T: Publisher + ?Sized> PublisherExt for T {}
